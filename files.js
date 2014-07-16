@@ -6,7 +6,7 @@ var crypto = require('crypto');
 var path = require('path');
 
 // Se encarga de todo lo q tiene que ver con el manejo de archivos completados e incompletos.
-// Storage verifica la integridad de los "chunk" de un archivo
+// Storage verificará (en el futuro) la integridad de los "chunk" de un archivo
 function storage(dir) 
 {
 	this.dir = dir;
@@ -37,7 +37,7 @@ function storage(dir)
 				var chunk = {present: true, size: chunk_size, offset: i*core.chunk_size};
 				chunks.push(chunk);
 			}
-			var doc = {file_id: file_id, filename: path.basename(file_path), completed: true, path: file_path, chunks_count: chunks_count, chunks: chunks};
+			var doc = {file_id: file_id, filename: path.basename(file_path), size: stat.size, completed: true, path: file_path, chunks_count: chunks_count, chunks: chunks};
 			_this.db.findOne({path: file_path}, function(err, old_doc) {
 				if(old_doc == null)
 					_this.db.insert(doc);
@@ -46,7 +46,7 @@ function storage(dir)
 	});
 	
 	this.watcher.on('remove', function(filename, size) {
-
+		// TODO
 	});
 }
 
@@ -79,4 +79,17 @@ storage.prototype.get_chunk = function(file_id, part, callback)
 	});
 };
 
+storage.prototype.alloc_incomplete = function(file_id, part, callback)
+{
+	this.db.findOne({file_id: file_id}, function(err, doc) {
+		if(doc != null) {
+			chunk = doc.chunks[part];
+			var buffer = new Buffer(chunk.size);
+			var fd = fs.openSync(doc.path, 'r');
+			fs.readSync(fd, buffer, 0, chunk.size, chunk.offset);
+			callback(buffer);
+		} else
+			callback(null);
+	});
+};
 module.exports.storage = storage;

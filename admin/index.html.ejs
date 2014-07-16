@@ -1,0 +1,49 @@
+<html>
+<head>
+<link href="/jquery.dataTables.css" rel="stylesheet" type="text/css">
+<script src="/socket.io/socket.io.js"></script>
+<script src="/jquery-1.11.1.min.js"></script>
+<script src="/jquery.dataTables.js"></script>
+<script>
+var socket = io('http://localhost:<%= socket_io_port %>');
+socket.on('find', function (envelope) {
+	console.log(envelope);
+	
+	$.each(envelope.results, function(idx, result) {
+		$("#result").append("<tr><td>"+result.filename+"</td><td>"+result.size+"</td><td>"+result.chunks.length+"</td><td><a href=\"/download?file_id="+encodeURIComponent(result.file_id)+"\">Download</a></td><td>"+envelope.from+"</td></tr>");
+	});
+});
+
+function find(query) {
+	$("#result").empty();
+	$.get("/find?q="+query, function( data ) {
+		console.log(data);
+	});
+}
+
+$(document).ready(function() {
+    $('#result_table').dataTable();
+    $("#result").empty();
+} );
+
+</script>
+</head>
+<body>
+	<h3>RPC on: <%= ip_address %> <%= rpc_port %></h3>
+	<input size="100" name="find_input" placeholder="Escribe aqui lo que quieres buscar" onchange="find(this.value)" />
+	<h4>Results:</h4>
+	<table id="result_table" class="display" cellspacing="0" width="100%">
+	        <thead>
+	            <tr>
+	                <th>Nombre</th>
+	                <th>Tamaño</th>
+	                <th>Pedazos (chunks)</th>
+					<th>Origen</th>
+					<th></th>
+	            </tr>
+	        </thead>
+
+			<tbody id="result">
+			</tbody>
+</body>
+</html>

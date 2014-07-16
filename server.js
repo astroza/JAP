@@ -11,7 +11,8 @@ var local_admin_port = core.random_port();
 
 // Admin
 var ejs = require('ejs');
-var admin_app = require('express')();
+var express = require('express');
+var admin_app = express();
 var admin_server = require('http').Server(admin_app);
 var io = require('socket.io')(admin_server);
 
@@ -23,9 +24,7 @@ admin_app.get('/', function (req, res) {
 	res.send(html);
 });
 
-io.on('connection', function (socket) {
-  socket.emit('find', { hello: 'world' });
-});
+admin_app.use(express.static(__dirname + '/public'));
 
 // Debug
 var debug = true;
@@ -40,7 +39,7 @@ function send_find_response(address, port, docs)
 		hostname: address
 	});
 	
-	client.request('find_response', [docs], null, function(err) {
+	client.request('find_response', [local_ip_addr, local_rpc_port, docs], null, function(err) {
 		if(debug && err)
 			console.log("server> can't send find response to " + core.global_id(address, port));
 	});
@@ -71,10 +70,21 @@ function find_by_name(name)
 {
 	var msg_id = create_msg_id();
 	known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
-		// Finalmente, reenvia el discover
 		client.request('find_by_name', [name, local_ip_addr, local_rpc_port, core.find_deep_max, msg_id], function(err) {
 			if(err && debug) {
 				console.log("server> can't send find_by_name");
+			}
+		});
+	});
+}
+
+function do_download(file_id) 
+{
+	var msg_id = create_msg_id();
+	known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
+		client.request('find_by_id', [file_id, local_ip_addr, local_rpc_port, core.find_deep_max, msg_id], function(err) {
+			if(err && debug) {
+				console.log("server> can't send find_by_id");
 			}
 		});
 	});
@@ -87,6 +97,18 @@ admin_app.get('/find', function (req, res)
 		res.send("Finding: " + req.query.q);
 	} else
 		res.send("Please use ?q=<something>");
+});
+
+admin_app.get('/download', function (req, res)
+{
+	if(req.query.file_id) {
+
+		do_download(req.query.file_id);
+		
+		html = ejs.render(fs.readFileSync(__dirname + '/admin/download.html.ejs', 'utf8'), {socket_io_port: local_admin_port});
+		res.send(html);
+	} else
+		res.send("TODO: List of downloads");
 });
 
 var server = jayson.server({
@@ -103,7 +125,7 @@ var server = jayson.server({
 		});
 		// busco localmente y envio la respuesta al origen
 		storage.find_by_name(name, function(docs) {
-			if(docs != null)
+			if(docs != null && docs.length > 0)
 				send_find_response(origin_address, origin_port, docs);
 		});
 		callback();
@@ -111,6 +133,8 @@ var server = jayson.server({
 	
 	find_by_id: function(id, origin_address, origin_port, deep_max, msg_id, callback) 
 	{
+		if(debug)
+			console.log("find_by_id> "+id);
 		// reenvio busca a vecinos
 		known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
 			// Finalmente, reenvia el discover
@@ -128,12 +152,13 @@ var server = jayson.server({
 		callback();
 	},
 	
-	find_response: function(response, callback)
+	find_response: function(origin_address, origin_port, response, callback)
 	{
 		if(Array.isArray(response)) {
 			// Respuesta de una busqueda hecha por el usuario
 			// publico en el canal 'find response' la respuesta que llego
-			console.log("RET="+io.sockets.emit('find', response));
+			envelope = {from: core.global_id(origin_address, origin_port), results: response};
+			io.sockets.emit('find', envelope);
 		} else {
 			// Respuesta de busqueda hecha por el sistema para un archivo en especifico
 		}
