@@ -31,6 +31,7 @@ var debug = true;
 
 var known_nodes = new core.nodes_list(debug);
 var storage = new files.storage('storage');
+var downloader = new (require('./downloader'))(storage);
 
 function send_find_response(address, port, docs)
 {
@@ -78,8 +79,12 @@ function find_by_name(name)
 	});
 }
 
+// Pregunta a la red por el archivo, alguno de ellos debera responder con un find_response
 function do_download(file_id) 
 {
+	// Registra la intención de descargar file_id
+	downloader.add(file_id);
+	
 	var msg_id = create_msg_id();
 	known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
 		client.request('find_by_id', [file_id, local_ip_addr, local_rpc_port, core.find_deep_max, msg_id], function(err) {
@@ -161,6 +166,14 @@ var server = jayson.server({
 			io.sockets.emit('find', envelope);
 		} else {
 			// Respuesta de busqueda hecha por el sistema para un archivo en especifico
+			envelope = {address: origin_address, port: origin_port, desc: response};
+			downloader.add_seed(envelope);
+			
+			// Podemos comenzar con una semilla
+			downloader.start(response.file_id, function(filename, part) {
+				// reporta progreso
+				io.sockets.emit('download', {filename: filename, part: part});
+			});
 		}
 		console.log(response);
 		callback();
@@ -205,9 +218,9 @@ var server = jayson.server({
 	transfer_request: function(file_id, part, callback) 
 	{
 		storage.get_chunk(file_id, part, function(buffer) {
-			if(buffer != null)
-				callback(null, buffer);
-			else
+			if(buffer != null) {
+				callback(null, buffer.toString('base64'));
+			} else
 				callback('not found', null);
 		});
 	}

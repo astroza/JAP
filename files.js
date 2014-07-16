@@ -50,9 +50,10 @@ function storage(dir)
 	});
 }
 
+// TODO: soporte para que leechers puedan compartir sus pedazos, o sea, q se puedan usar archivos con completed: false
 storage.prototype.find_by_id = function(file_id, callback)
 {
-	this.db.findOne({file_id: file_id}, function(err, doc) {
+	this.db.findOne({completed: true, file_id: file_id}, function(err, doc) {
 		callback(doc);
 	});
 };
@@ -60,7 +61,7 @@ storage.prototype.find_by_id = function(file_id, callback)
 storage.prototype.find_by_name = function(regexp_str, callback) 
 {
 	var rexp = new RegExp(regexp_str);
-	this.db.find({filename: {$regex: rexp}}, function(err, docs) {
+	this.db.find({completed: true, filename: {$regex: rexp}}, function(err, docs) {
 		callback(docs);
 	});
 };
@@ -79,17 +80,28 @@ storage.prototype.get_chunk = function(file_id, part, callback)
 	});
 };
 
-storage.prototype.alloc_incomplete = function(file_id, part, callback)
+storage.prototype.alloc_space = function(file_id, filename, size, chunks, ready_callback)
 {
-	this.db.findOne({file_id: file_id}, function(err, doc) {
-		if(doc != null) {
-			chunk = doc.chunks[part];
-			var buffer = new Buffer(chunk.size);
-			var fd = fs.openSync(doc.path, 'r');
-			fs.readSync(fd, buffer, 0, chunk.size, chunk.offset);
-			callback(buffer);
-		} else
-			callback(null);
+	// TODO: Marcar chunks no presentes, (actualmente solo hago una copia desde la semilla)
+	var doc = {file_id: file_id, filename: filename, size: size, completed: false, path: this.dir + '/share/incomplete/' + filename, chunks_count: chunks.length, chunks: chunks};
+	this.db.insert(doc, function(err, new_doc) {
+		var fd = fs.openSync(doc.path, 'w');
+		console.log("DEBUG: " + fd + " " + size)
+		fs.ftruncateSync(fd, size-1);
+		fs.writeSync(fd, new Buffer(1), 0, 1, size-1);
+		ready_callback(fd);
 	});
 };
+
+storage.prototype.promote = function(file_id)
+{
+	var _this = this;
+	this.db.findOne({file_id: file_id}, function(err, doc) {
+		if(doc) {
+			fs.renameSync(doc.path, _this.dir + '/share/' + doc.filename);
+			// _this.db.update();
+		}
+	});
+};
+
 module.exports.storage = storage;
