@@ -6,7 +6,10 @@
 var socket = io('http://localhost:<%= socket_io_port %>');
 socket.on('download', function (report) {
 	console.log(report);
-	$("#report").append("<li>" + report.filename + ": se descargo el pedazo (chunk) " + report.part + "</li>");
+	if(report.part >= 0)
+		$("#report").append("<li>" + report.filename + ": Se descargo el pedazo (chunk) " + report.part + "</li>");
+	else
+		$("#report").append("<li>" + report.filename + ": Terminado.</li>");
 });
 
 </script>

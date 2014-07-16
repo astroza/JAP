@@ -47,7 +47,7 @@ downloader.prototype.transfer_chunk = function(fd, seed, part, progress_callback
 			} else {
 				fs.closeSync(fd);
 				_this.storage.promote(seed.desc.file_id);
-				
+				progress_callback(seed.desc.filename, -1);
 			}
 		}
 	});
