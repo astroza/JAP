@@ -1,12 +1,13 @@
 var nedb = require('nedb');
 var jayson = require('jayson');
 var os = require('os');
-// var ping_interval = 30*1000; // ms
-var ping_interval = 5*1000;
+// var ping_interval = 30 * 1000; // 30 s
+var ping_interval = 5 * 1000; // 5 s
+var msg_id_timelife = 120 * 1000; // 120 s
 
 function random_port()
 {
-	return Math.floor(Math.random() * (65535 - 1024) + 65535);
+	return Math.floor(Math.random() * (65535 - 1024) + 1024);
 }
 
 function global_id(address, port) 
@@ -14,10 +15,49 @@ function global_id(address, port)
 	return address + '.' + port;
 }
 
+// id para identificar un mensaje e evitar reenviarlo de manera ciclica
+function create_msg_id(local_address, local_port)
+{
+	return global_id(local_address, local_port) + '.' + Date.now() + '.' + random_port();
+}
+
+function temporarily_stored_msg_ids(debug)
+{
+	var db = new nedb({ filename: 'msg_ids.db', autoload: true });
+	this.db = db;
+	this.debug = debug;
+	// TODO: an obsoleted msg_ids cleaner
+	/*
+	setInterval(function() {
+		
+	}, msg_id_timelife);
+	*/
+}
+
+temporarily_stored_msg_ids.prototype.is_a_new_msg = function(msg_id, callback) {
+	var db = this.db;
+	var debug = this.debug;
+	db.findOne({timestamp: {$gte: Date.now() - msg_id_timelife}, msg_id: msg_id}, function (err, doc) {
+		if(doc == null) {
+			// it's a new message
+			db.insert({msg_id: msg_id, timestamp: Date.now()}, function(err, new_doc) {
+				if(debug)
+					console.log("temporarily_stored_msg_ids> " + msg_id + " was registered");
+			});
+			callback();
+		} else {
+			// it's a message that already passed through here
+			if(debug)
+				console.log("temporarily_stored_msg_ids> ignoring " + msg_id);
+		}
+	});
+};
+
 function nodes_list(debug) 
 {
 	this.debug = debug;
     this.db = new nedb({ filename: 'nodes.db', autoload: true });
+	this.ignored_msg_ids = new temporarily_stored_msg_ids(debug);
 }
 
 nodes_list.prototype.touch = function(address, port) 
@@ -27,7 +67,7 @@ nodes_list.prototype.touch = function(address, port)
 	db.findOne({address: address, port: port}, function (err, doc) {
 		if(doc == null) {
 			doc = {address: address, port: port, timestamp: Date.now()};
-			db.insert(doc, function(err, num) {
+			db.insert(doc, function(err, new_doc) {
 				if(debug)
 					console.log("nodes_list> " + global_id(address, port) + " was added");
 			});
@@ -79,27 +119,27 @@ nodes_list.prototype.check_nodes = function(local_ip_addr, local_rpc_port)
 	});
 };
 
-nodes_list.prototype.forward_discover = function(origin_address, origin_port, deep_max, local_ip_addr, local_rpc_port) 
+nodes_list.prototype.forward = function(local_ip_addr, local_rpc_port, msg_id, callback) 
 {
 	var debug = this.debug;
-	this.db.find({}, function (err, docs) {
-		for(i = 0; i < docs.length; i++) {
-			var node = docs[i];
-			// No reenvia a si mismo
-			if(node.address == local_ip_addr && node.port == local_rpc_port)
-				continue;
+	var db = this.db;
+	// Hace forward solo si el mensaje no ha pasado por aqui, o sea, si "is a new msg"
+	this.ignored_msg_ids.is_a_new_msg(msg_id, function() {
+		db.find({}, function (err, docs) {
+			for(i = 0; i < docs.length; i++) {
+				var node = docs[i];
+				// No reenvia a si mismo
+				if(node.address == local_ip_addr && node.port == local_rpc_port)
+					continue;
 				
-			var client = jayson.client.http({
-				port: node.port,
-				hostname: node.address
-			});
-			// Finalmente, reenvia el discover
-			client.request('discover', [origin_address, origin_port, deep_max], function(err) {
-				if(!err && debug) {
-					console.log("forward_discover> discover was sent to " + global_id(origin_address, origin_port));
-				}
-			});
-		}
+				var client = jayson.client.http({
+					port: node.port,
+					hostname: node.address
+				});
+			
+				callback(client);
+			}
+		});
 	});
 }
 
@@ -134,3 +174,6 @@ module.exports.ping_interval = ping_interval;
 module.exports.global_id = global_id;
 module.exports.get_local_ip_addr = get_local_ip_addr;
 module.exports.discover_deep_max = 2;
+module.exports.find_deep_max = 10;
+module.exports.create_msg_id = create_msg_id;
+module.exports.temporarily_stored_msg_ids = temporarily_stored_msg_ids;
