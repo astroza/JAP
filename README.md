@@ -13,8 +13,8 @@ export PEDOSPE=$(pwd)
 ```
 ### Usage
 ```bash
-mkdir $HOME/pedospe
-cd $HOME/pedospe
+mkdir $HOME/pedospe.data
+cd $HOME/pedospe.data
 node $PEDOSPE/server.js
 ```
 
