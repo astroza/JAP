@@ -38,7 +38,7 @@ function storage(dir)
 				chunks.push(chunk);
 			}
 			var doc = {file_id: file_id, filename: path.basename(file_path), size: stat.size, completed: true, path: file_path, chunks_count: chunks_count, chunks: chunks};
-			_this.db.findOne({path: file_path}, function(err, old_doc) {
+			_this.db.findOne({completed: true, path: file_path}, function(err, old_doc) {
 				if(old_doc == null)
 					_this.db.insert(doc);
 			});
@@ -98,8 +98,9 @@ storage.prototype.promote = function(file_id)
 	var _this = this;
 	this.db.findOne({file_id: file_id}, function(err, doc) {
 		if(doc) {
-			fs.renameSync(doc.path, _this.dir + '/share/' + doc.filename);
-			// _this.db.update();
+			_this.db.remove({ _id: doc._id }, {}, function (err, numRemoved) {
+				fs.renameSync(doc.path, _this.dir + '/share/' + doc.filename);
+			});
 		}
 	});
 };
