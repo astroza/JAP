@@ -107,13 +107,10 @@ admin_app.get('/find', function (req, res)
 admin_app.get('/download', function (req, res)
 {
 	if(req.query.file_id) {
-
 		do_download(req.query.file_id);
-		
-		html = ejs.render(fs.readFileSync(__dirname + '/admin/download.html.ejs', 'utf8'), {socket_io_port: local_admin_port});
-		res.send(html);
-	} else
-		res.send("TODO: List of downloads");
+	}
+	html = ejs.render(fs.readFileSync(__dirname + '/admin/download.html.ejs', 'utf8'), {socket_io_port: local_admin_port});
+	res.send(html);
 });
 
 var server = jayson.server({
