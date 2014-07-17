@@ -1,4 +1,4 @@
-JAP - Just another incomplete P2P
+JAP - Just another P2P
 =======
 ### Dependencies
 * nodejs
