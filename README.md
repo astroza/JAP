@@ -1,4 +1,4 @@
-pedospe - Just another incomplete P2P
+JAP - Just another incomplete P2P
 =======
 ### Dependencies
 * nodejs
@@ -6,16 +6,16 @@ pedospe - Just another incomplete P2P
 
 ### Install
 ```bash
-git clone https://github.com/astroza/pedospe
-cd pedospe
+git clone https://github.com/astroza/jap
+cd jap
 npm install
-export PEDOSPE=$(pwd)
+export JAP=$(pwd)
 ```
 ### Usage
 ```bash
-mkdir $HOME/pedospe.data
-cd $HOME/pedospe.data
-node $PEDOSPE/server.js
+mkdir $HOME/jap.data
+cd $HOME/jap.data
+node $JAP/server.js
 ```
 
-Now, you can share files in **$HOME/pedospe/storage/share** directory.
+Now, you can share files in **$HOME/jap.data/storage/share** directory.
