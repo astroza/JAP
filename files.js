@@ -10,6 +10,7 @@ var path = require('path');
 function storage(dir) 
 {
 	this.dir = dir;
+	this.debug = true; // TODO: a global flag
 	
 	try {
 		fs.mkdirSync(dir);
@@ -22,7 +23,7 @@ function storage(dir)
 	this.db = new nedb({ filename: dir + '/storage.db', autoload: true });
 	this.watcher = chokidar.watch(dir + '/share', {ignored: /([\/\\]incomplete|[\/\\]\.)/, persistent: true});
 	var _this = this;
-	this.watcher.on('add', function(file_path) 
+	var index_file = function(file_path) 
 	{
 		var stat = fs.statSync(file_path);
 		if(stat.isFile()) {
@@ -38,12 +39,16 @@ function storage(dir)
 				chunks.push(chunk);
 			}
 			var doc = {file_id: file_id, filename: path.basename(file_path), size: stat.size, completed: true, path: file_path, chunks_count: chunks_count, chunks: chunks};
-			_this.db.findOne({completed: true, path: file_path}, function(err, old_doc) {
-				if(old_doc == null)
-					_this.db.insert(doc);
+			_this.db.remove({completed: true, path: file_path}, function(err, count) {
+				if(count > 0)
+					console.log("index_file> updating index of " + doc.file_id);
+				_this.db.insert(doc);
 			});
 		}
-	});
+	};
+	
+	this.watcher.on('add', index_file);
+	this.watcher.on('change', index_file);
 	
 	this.watcher.on('remove', function(filename, size) {
 		// TODO
