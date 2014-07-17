@@ -16,7 +16,7 @@ export JAP=$(pwd)
 mkdir $HOME/jap.data
 cd $HOME/jap.data
 ```
-#### First node (a root server)
+#### First node (a kickstart server)
 ```
 node $JAP/server.js
 ```
@@ -24,6 +24,6 @@ node $JAP/server.js
 ```
 node $JAP/server.js <server address> <rpc port>
 ```
-**<server address>** and **<rpc port>** can belong to any network member. Just knowing a member is enough for joining.
+**\<server address\>** and **\<rpc port\>** can belong to any network member (node). Just knowing a member is enough for joining.
 
 Now, you can share files in **$HOME/jap.data/storage/share** directory.
