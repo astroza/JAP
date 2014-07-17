@@ -27,7 +27,7 @@ function storage(dir)
 		var stat = fs.statSync(file_path);
 		if(stat.isFile()) {
 			var chunks_count = Math.ceil(stat.size / core.chunk_size);
-			var file_id = crypto.createHash('sha256').update(path + Date.now).digest('base64');
+			var file_id = crypto.createHash('sha256').update(file_path + Date.now()).digest('base64');
 			var chunks = [];
 			for(i = 0; i < chunks_count; i++) {
 				var remaining = stat.size - i*core.chunk_size;

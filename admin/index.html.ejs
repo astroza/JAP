@@ -19,6 +19,8 @@ function find(query) {
 	$.get("/find?q="+query, function( data ) {
 		console.log(data);
 	});
+	$("#find_info").empty();
+	$("#find_info").append("Buscando <b>" + query + "</b>");
 }
 
 $(document).ready(function() {
@@ -30,8 +32,10 @@ $(document).ready(function() {
 </head>
 <body>
 	<h3>RPC on: <%= ip_address %> <%= rpc_port %></h3>
-	<input size="100" name="find_input" placeholder="Escribe aqui lo que quieres buscar" onchange="find(this.value)" />
-	<h4>Results:</h4>
+	<input size="100" id="find_input" name="find_input" placeholder="Escribe aqui lo que quieres buscar" />
+	<button onclick="find($('#find_input').val())">Buscar</button>
+	<div id="find_info"></div>
+	<h4>Resultados:</h4>
 	<table id="result_table" class="display" cellspacing="0" width="100%">
 	        <thead>
 	            <tr>

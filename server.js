@@ -166,6 +166,7 @@ var server = jayson.server({
 			envelope = {address: origin_address, port: origin_port, desc: response};
 			downloader.add_seed(envelope);
 			
+			console.log("find_response> starting to download " + response.file_id);
 			// Podemos comenzar con una semilla
 			downloader.start(response.file_id, function(filename, part) {
 				// reporta progreso
