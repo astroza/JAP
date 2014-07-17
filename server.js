@@ -197,7 +197,7 @@ var server = jayson.server({
 					// Finalmente, reenvia el discover
 					client.request('discover', [origin_address, origin_port, deep_max-1, msg_id], function(err) {
 						if(!err && debug) {
-							console.log("forward_discover> discover was sent to " + global_id(origin_address, origin_port));
+							console.log("forward_discover> discover was sent to " + core.global_id(origin_address, origin_port));
 						}
 					});
 				});
