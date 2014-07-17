@@ -60,10 +60,14 @@ storage.prototype.find_by_id = function(file_id, callback)
 
 storage.prototype.find_by_name = function(regexp_str, callback) 
 {
-	var rexp = new RegExp(regexp_str);
-	this.db.find({completed: true, filename: {$regex: rexp}}, function(err, docs) {
-		callback(docs);
-	});
+	try {
+		var rexp = new RegExp(regexp_str);
+		this.db.find({completed: true, filename: {$regex: rexp}}, function(err, docs) {
+			callback(docs);
+		});
+	} catch(e) {
+		callback(null);
+	}
 };
 
 storage.prototype.get_chunk = function(file_id, part, callback)
