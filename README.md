@@ -24,6 +24,6 @@ node $JAP/server.js
 ```
 node $JAP/server.js <server address> <rpc port>
 ```
-**\<server address\>** and **\<rpc port\>** can belong to any network member (node). Just knowing a member to join to a network.
+**\<server address\>** and **\<rpc port\>** can belong to any network member (node). Just knowing a member is enough to join to a network.
 
 Now, you can share files in **$HOME/jap.data/storage/share** directory.
