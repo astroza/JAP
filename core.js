@@ -21,9 +21,9 @@ function create_msg_id(local_address, local_port)
 	return global_id(local_address, local_port) + '.' + Date.now() + '.' + random_port();
 }
 
-function temporarily_stored_msg_ids(debug)
+function temporarily_stored_msg_ids(name, debug)
 {
-	var db = new nedb({ filename: 'msg_ids.db', autoload: true });
+	var db = new nedb({ filename: name + '_msg_ids.db', autoload: true });
 	this.db = db;
 	this.debug = debug;
 	// TODO: an obsoleted msg_ids cleaner
@@ -57,7 +57,7 @@ function nodes_list(debug)
 {
 	this.debug = debug;
     this.db = new nedb({ filename: 'nodes.db', autoload: true });
-	this.ignored_msg_ids = new temporarily_stored_msg_ids(debug);
+	this.ignored_msg_ids = new temporarily_stored_msg_ids("forward", debug);
 }
 
 nodes_list.prototype.touch = function(address, port) 

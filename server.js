@@ -32,6 +32,7 @@ var debug = true;
 var known_nodes = new core.nodes_list(debug);
 var storage = new files.storage('storage');
 var downloader = new (require('./downloader'))(storage);
+var find_ignored_msg_ids = temporarily_stored_msg_ids("find", true);
 
 function send_find_response(address, port, docs)
 {
@@ -116,19 +117,25 @@ admin_app.get('/download', function (req, res)
 var server = jayson.server({
 	find_by_name: function(name, origin_address, origin_port, deep_max, msg_id, callback) 
 	{
-		// reenvio busca a vecinos
-		known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
-			// Finalmente, reenvia el discover
-			client.request('find_by_name', [name, origin_address, origin_port, deep_max-1, msg_id], function(err) {
-				if(err && debug) {
-					console.log("forward_discover> can't send find_by_name");
-				}
+		if(deep_max > 0) {
+			// reenvio busca a vecinos
+			known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
+				// Finalmente, reenvia el discover
+				client.request('find_by_name', [name, origin_address, origin_port, deep_max-1, msg_id], function(err) {
+					if(err && debug) {
+						console.log("forward_discover> can't send find_by_name");
+					}
+				});
 			});
-		});
-		// busco localmente y envio la respuesta al origen
-		storage.find_by_name(name, function(docs) {
-			if(docs != null && docs.length > 0)
-				send_find_response(origin_address, origin_port, docs);
+		}
+		
+		// Si la busqueda ya paso por aqui, no la vuelvo a responder
+		find_ignored_msg_ids.is_a_new_msg(msg_id, function() {
+			// busco localmente y envio la respuesta al origen
+			storage.find_by_name(name, function(docs) {
+				if(docs != null && docs.length > 0)
+					send_find_response(origin_address, origin_port, docs);
+			});
 		});
 		callback();
 	},
@@ -137,19 +144,26 @@ var server = jayson.server({
 	{
 		if(debug)
 			console.log("find_by_id> "+id);
-		// reenvio busca a vecinos
-		known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
-			// Finalmente, reenvia el discover
-			client.request('find_by_id', [id, origin_address, origin_port, deep_max-1, msg_id], function(err) {
-				if(err && debug) {
-					console.log("forward_discover> can't send find_by_id");
-				}
+		
+		if(deep_max > 0) {
+			// reenvio busca a vecinos
+			known_nodes.forward(local_ip_addr, local_rpc_port, msg_id, function(client) {
+				// Finalmente, reenvia el discover
+				client.request('find_by_id', [id, origin_address, origin_port, deep_max-1, msg_id], function(err) {
+					if(err && debug) {
+						console.log("forward_discover> can't send find_by_id");
+					}
+				});
 			});
-		});
-		// busco localmente y envio la respuesta al origen
-		storage.find_by_id(id, function(doc) {
-			if(doc != null)
-				send_find_response(origin_address, origin_port, doc);
+		}
+		
+		// Si la busqueda ya paso por aqui, no la vuelvo a responder
+		find_ignored_msg_ids.is_a_new_msg(msg_id, function() {
+			// busco localmente y envio la respuesta al origen
+			storage.find_by_id(id, function(doc) {
+				if(doc != null)
+					send_find_response(origin_address, origin_port, doc);
+			});
 		});
 		callback();
 	},
