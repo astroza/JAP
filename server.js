@@ -5,9 +5,9 @@ var files = require('./files');
 var os = require( 'os' );
 var fs = require('fs');
 
-var local_rpc_port = core.random_port();
+var local_rpc_port = 4000; // core.random_port();
 var local_ip_addr = core.get_local_ip_addr();
-var local_admin_port = core.random_port();
+var local_admin_port = 3000; // core.random_port();
 
 // Admin
 var ejs = require('ejs');
