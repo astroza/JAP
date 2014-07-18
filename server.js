@@ -32,7 +32,7 @@ var debug = true;
 var known_nodes = new core.nodes_list(debug);
 var storage = new files.storage('storage');
 var downloader = new (require('./downloader'))(storage);
-var find_ignored_msg_ids = temporarily_stored_msg_ids("find", true);
+var find_ignored_msg_ids = new core.temporarily_stored_msg_ids("find", true);
 
 function send_find_response(address, port, docs)
 {
