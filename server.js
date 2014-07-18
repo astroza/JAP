@@ -78,6 +78,8 @@ function find_by_name(name)
 			}
 		});
 	});
+	// Registro el msg_id de este find para evitar responderse a si mismo.
+	find_ignored_msg_ids.is_a_new_msg(msg_id, function() {});
 }
 
 // Pregunta a la red por el archivo, alguno de ellos debera responder con un find_response
