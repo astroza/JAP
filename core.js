@@ -23,11 +23,12 @@ function create_msg_id(local_address, local_port)
 
 function temporarily_stored_msg_ids(name, debug)
 {
-	var db = new nedb({ filename: name + '_msg_ids.db', autoload: true });
+	var db = new nedb(); // ({ filename: name + '_msg_ids.db', autoload: true });
 	// para buscar e insertar de manera atomica
 	db.ensureIndex({ fieldName: 'msg_id', unique: true }, function (err) {});
 	this.db = db;
 	this.debug = debug;
+	this.name = name;
 	// TODO: an obsoleted msg_ids cleaner
 	/*
 	setInterval(function() {
@@ -39,16 +40,17 @@ function temporarily_stored_msg_ids(name, debug)
 temporarily_stored_msg_ids.prototype.is_a_new_msg = function(msg_id, callback) {
 	var db = this.db;
 	var debug = this.debug;
+	var name = this.name;
 	db.insert({timestamp: Date.now(), msg_id: msg_id}, function (err) {
 		if(err == null) {
 			// it's a new message
 			if(debug)
-				console.log("temporarily_stored_msg_ids> " + msg_id + " was registered");
+				console.log("temporarily_stored_msg_ids["+name+"]> " + msg_id + " was registered");
 			callback();
 		} else {
 			// it's a message that already passed through here
 			if(debug)
-				console.log("temporarily_stored_msg_ids> ignoring " + msg_id);
+				console.log("temporarily_stored_msg_ids["+name+"]> ignoring " + msg_id);
 		}
 	});
 };
