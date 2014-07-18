@@ -24,6 +24,8 @@ function create_msg_id(local_address, local_port)
 function temporarily_stored_msg_ids(name, debug)
 {
 	var db = new nedb({ filename: name + '_msg_ids.db', autoload: true });
+	// para buscar e insertar de manera atomica
+	db.ensureIndex({ fieldName: 'msg_id', unique: true }, function (err) {});
 	this.db = db;
 	this.debug = debug;
 	// TODO: an obsoleted msg_ids cleaner
@@ -37,13 +39,11 @@ function temporarily_stored_msg_ids(name, debug)
 temporarily_stored_msg_ids.prototype.is_a_new_msg = function(msg_id, callback) {
 	var db = this.db;
 	var debug = this.debug;
-	db.findOne({timestamp: {$gte: Date.now() - msg_id_timelife}, msg_id: msg_id}, function (err, doc) {
-		if(doc == null) {
+	db.insert({timestamp: Date.now(), msg_id: msg_id}, function (err) {
+		if(err == null) {
 			// it's a new message
-			db.insert({msg_id: msg_id, timestamp: Date.now()}, function(err, new_doc) {
-				if(debug)
-					console.log("temporarily_stored_msg_ids> " + msg_id + " was registered");
-			});
+			if(debug)
+				console.log("temporarily_stored_msg_ids> " + msg_id + " was registered");
 			callback();
 		} else {
 			// it's a message that already passed through here
